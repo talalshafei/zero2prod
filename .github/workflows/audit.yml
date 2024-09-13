@@ -1,7 +1,8 @@
 name: Security audit
 on:
   schedule:
-    - cron: '0 0 * * *'
+    # every week at midnight, but real projects should be done everyday
+    - cron: '0 0 * * 0'
   push:
     paths:
       - '**/Cargo.toml'
