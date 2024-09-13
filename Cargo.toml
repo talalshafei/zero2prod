@@ -18,6 +18,9 @@ serde = { version = "1", features = ["derive"] }
 config = "0.14"
 uuid = {version = "1.10.0", features = ["v4"]}
 chrono = {version = "0.4.38", default-features = false, features = ["clock"]}
+env_logger = "0.11.5"
+log = "0.4.22"
+tracing = { version = "0.1.40", features = ["log"] }
 
 # Using table-like toml syntax to avoid a super-long line!
 [dependencies.sqlx]
