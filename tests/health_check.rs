@@ -1,7 +1,34 @@
+use secrecy::ExposeSecret;
 use zero2prod::configuration::{get_configuration, DatabaseSettings};
+use zero2prod::telemetry::{get_subscriber, init_subscriber};
 use sqlx::{PgPool, PgConnection, Connection, Executor};
 use std::net::TcpListener;
 use uuid::Uuid;
+use once_cell::sync::Lazy;
+
+static TRACING: Lazy<()> = Lazy::new(|| {
+    let default_filter_level = "info".to_string();
+    let subscriber_name = "test".to_string();
+    if std::env::var("TEST_LOG").is_ok(){
+        init_subscriber(
+            get_subscriber(
+                subscriber_name, 
+                default_filter_level,
+                std::io::stdout,
+            )
+        );
+    }
+    else {
+        init_subscriber(
+            get_subscriber(
+                subscriber_name,
+                default_filter_level,
+                std::io::sink,
+            )
+        );
+    }
+    
+});
 
 struct TestApp {
     pub address: String,
@@ -11,6 +38,10 @@ struct TestApp {
 /// Spin up an instance of our application
 /// and returns its address (i.e. http://localhost:XXXX)
 async fn spawn_app() -> TestApp {
+
+    // execute logger init once
+    Lazy::force(&TRACING);
+
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port");
     // we retrieve the port assigned to us by the OS
 
@@ -38,7 +69,7 @@ pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
     // Create database
 
     let mut connection = PgConnection::connect(
-        &config.connection_string_without_db()
+        &config.connection_string_without_db().expose_secret()
     )
     .await
     .expect("Failed to connect to Postgres");
@@ -49,7 +80,7 @@ pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .expect("Failed to create database. ");
 
     // Migrate database
-    let connection_pool = PgPool::connect(&config.connection_string())
+    let connection_pool = PgPool::connect(&config.connection_string().expose_secret())
         .await
         .expect("Failed to connect to Postgres. ");
 
