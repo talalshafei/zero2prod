@@ -29,6 +29,7 @@ tracing-bunyan-formatter = "0.3.9"
 tracing-log = "0.2.0"
 secrecy = { version = "0.8.0", features = ["serde"] }
 tracing-actix-web = "0.7.12"
+serde-aux = "4.5.0"
 
 # Using table-like toml syntax to avoid a super-long line!
 [dependencies.sqlx]
