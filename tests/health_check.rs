@@ -1,9 +1,11 @@
-use zero2prod::configuration::{get_configuration, DatabaseSettings};
-use zero2prod::telemetry::{get_subscriber, init_subscriber};
 use sqlx::{PgPool, PgConnection, Connection, Executor};
 use std::net::TcpListener;
 use uuid::Uuid;
 use once_cell::sync::Lazy;
+use zero2prod::telemetry::{get_subscriber, init_subscriber};
+use zero2prod::configuration::{get_configuration, DatabaseSettings};
+use zero2prod::startup::run;
+use zero2prod::email_client::EmailClient;
 
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info".to_string();
@@ -53,7 +55,14 @@ async fn spawn_app() -> TestApp {
 
     let connection_pool = configure_database(&configuration.database).await;
 
-    let server = zero2prod::startup::run(listener, connection_pool.clone())
+    let sender_email = configuration.email_client.sender()
+        .expect("Invalid sender email address.");
+    let email_client = EmailClient::new(
+        configuration.email_client.base_url,
+        sender_email,
+    );
+
+    let server = run(listener, connection_pool.clone(), email_client)
         .expect("Failed to bind address");
 
     let _ = tokio::spawn(server);
